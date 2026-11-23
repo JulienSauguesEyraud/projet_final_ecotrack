@@ -105,3 +105,21 @@ Déposer le lien du dépôt GitLab dans le devoir Moodle avant l’échéance an
 | api | GET /status | Vérifier PostgreSQL et worker |
 | api | POST /analyze | Calculer via Python et enregistrer |
 | api | GET /history | Lire les 50 derniers résultats |
+
+___
+
+### GROUPE : Julien SAUGUES--EYRAUD et Mathis GILGENKRANTZ (A1)
+___
+
+### COMMANDES DE LANCEMENT ET D'ARRÊT
+___
+
+
+### PREUVES
+___
+
+Après la partie 2 : Tester Python avec un venv
+![alt text](images_preuves/partie2.png)
+
+### VÉRIFICATIONS
+___
