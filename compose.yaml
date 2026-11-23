@@ -1,0 +1,59 @@
+services:
+
+  frontend:
+    build: ./frontend
+    container_name: ecotrack-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+  api:
+    build: ./api
+    container_name: ecotrack-api
+    ports:
+      - "5000:5000"
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: appdb
+      POSTGRES_USER: etudiant
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      WORKER_URL: http://worker:8000
+    secrets:
+      - db_password
+    depends_on:
+      db:
+        condition: service_healthy
+      worker:
+        condition: service_started
+
+  worker:
+    build: ./worker
+    container_name: ecotrack-worker
+    expose:
+      - "8000"
+
+  db:
+    image: postgres:15-alpine
+    container_name: ecotrack-db
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: etudiant
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U etudiant -d appdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+
+secrets:
+  db_password:
+    file: ./db_password.txt
