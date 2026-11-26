@@ -111,7 +111,7 @@ ___
 ### GROUPE : Julien SAUGUES--EYRAUD et Mathis GILGENKRANTZ (A1)
 ___
 
-### ### COMMANDES DE LANCEMENT ET D'ARRÊT
+### COMMANDES DE LANCEMENT ET D'ARRÊT
 ___
 
 Toutes les commandes doivent être exécutées depuis la racine du projet.
@@ -121,6 +121,8 @@ Toutes les commandes doivent être exécutées depuis la racine du projet.
 Le fichier `db_password.txt` n'est pas dans le dépôt, il faut le recréer avant le premier lancement.
 
 Windows PowerShell :
+```powershell
+Set-Content -Path db_password.txt -Value "VotreMotDePasse" -NoNewline
 ```
 
 Linux ou macOS :
