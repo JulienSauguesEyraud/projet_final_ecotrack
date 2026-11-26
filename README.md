@@ -116,6 +116,18 @@ ___
 
 Toutes les commandes doivent être exécutées depuis la racine du projet.
 
+**Créer le secret (à faire une seule fois après le clonage) :**
+
+Le fichier `db_password.txt` n'est pas dans le dépôt, il faut le recréer avant le premier lancement.
+
+Windows PowerShell :
+```
+
+Linux ou macOS :
+```bash
+printf '%s' 'VotreMotDePasse' > db_password.txt
+```
+
 **Vérifier la configuration :**
 ```bash
 docker compose config -q
@@ -145,6 +157,13 @@ docker compose down
 ```
 
 Les données PostgreSQL sont conservées dans un volume Docker et restent disponibles après l'arrêt des conteneurs.
+
+**Arrêter et supprimer les données :**
+```bash
+docker compose down -v
+```
+
+Attention, l'option `-v` supprime aussi le volume, donc tout l'historique est perdu. Il faut aussi l'utiliser si on change le mot de passe dans `db_password.txt`, sinon PostgreSQL garde l'ancien.
 
 ### PREUVES
 ___
@@ -199,16 +218,53 @@ Voilà le résultat sur l'interface React après avoir arreté puis redémarré 
 
 **3. Vérification des réseaux**
 
-Les différents services communiquent entre eux grâce au réseau créé automatiquement par Docker Compose.
+Les services sont répartis sur deux réseaux Docker : `front` (frontend, api) et `back` (api, worker, db).
+
+Commande :
+```bash
+docker network ls
+```
+Résultat : on voit les réseaux `projet_final_ecotrack_front` et `projet_final_ecotrack_back` créés par Compose.
+
+Commande (le frontend peut joindre l'API) :
+```bash
+docker compose exec frontend wget -qO- http://api:5000/health
+```
+Résultat : `{"status":"ok"}`. Le frontend et l'API sont sur le même réseau `front`.
+
+Commande (le frontend ne peut pas joindre la base) :
+```bash
+docker compose exec frontend wget -qO- -T 3 http://db:5432
+```
+Résultat : `wget: bad address 'db:5432'`. Le frontend n'est pas sur le réseau `back`, il ne connait même pas le nom `db`. Seule l'API fait le lien entre les deux réseaux.
 
 L'API utilise les noms de services pour communiquer avec les autres conteneurs :
 - `worker:8000` pour le service Python.
 - `db:5432` pour PostgreSQL.
 
+Voilà le résultat : ![alt text](images_preuves/reseaux.png)
+
 **4. Vérification du secret**
 
-Le mot de passe PostgreSQL est stocké dans le fichier `db_password.txt`.
+Le mot de passe PostgreSQL est stocké dans le fichier `db_password.txt`, qui est transmis aux conteneurs grâce au mécanisme des secrets de Docker Compose.
 
-Docker Compose transmet ce fichier aux conteneurs concernés grâce au mécanisme des secrets.
+Commande (le fichier n'est pas versionné) :
+```bash
+git check-ignore -v db_password.txt
+```
+Résultat : la commande affiche la ligne du `.gitignore` qui exclut `db_password.txt`, il ne sera donc jamais poussé sur GitLab.
 
-Le fichier `db_password.txt` est exclu du dépôt Git grâce au `.gitignore`.
+Commande (le mot de passe n'est pas dans les variables d'environnement) :
+```bash
+docker inspect ecotrack-api --format "{{json .Config.Env}}"
+```
+Résultat : on voit seulement `POSTGRES_PASSWORD_FILE=/run/secrets/db_password`, le chemin du fichier et pas le mot de passe.
+
+Commande (seuls db et api ont accès au secret) :
+```bash
+docker compose exec api ls /run/secrets
+docker compose exec worker ls /run/secrets
+```
+Résultat : l'API affiche `db_password`, alors que pour le worker on a une erreur `No such file or directory`. Le worker n'a pas besoin du mot de passe donc il n'y a pas accès.
+
+Voilà le résultat : ![alt text](images_preuves/secret.png)
